@@ -16,12 +16,6 @@ class OLS:
         self.intercept_ = None # Valor del intercepto (beta_0)
         self.coef_ = None      # Coeficientes de las variables (beta_1, beta_2, ...)
 
-    def _add_intercept(self, X: np.ndarray) -> np.ndarray:
-        """
-        Añade una columna de unos (intercepto) al inicio de la matriz de características X.
-        """
-        return np.c_[np.ones(X.shape[0]), X]
-
     def fit(self, X: np.ndarray, y: np.ndarray):
         """
         Ajusta el modelo OLS a los datos de entrenamiento.
@@ -33,12 +27,10 @@ class OLS:
             X (np.ndarray): Matriz de características (variables independientes).
             y (np.ndarray): Vector de la variable objetivo (variable dependiente).
         """
-        # Añade la columna de unos a la matriz X para el término del intercepto.
-        X_con_intercepto = self._add_intercept(X)
-
+        
         # Calcula los coeficientes beta usando la fórmula de la ecuación normal.
-        factor_0 = np.linalg.inv(np.matmul(X_con_intercepto.T, X_con_intercepto))
-        factor_1 = np.matmul(X_con_intercepto.T, y)
+        factor_0 = np.linalg.inv(np.matmul(X.T, X))
+        factor_1 = np.matmul(X.T, y)
         self.beta = np.matmul(factor_0, factor_1)
 
         # Separa el intercepto y los demás coeficientes para mayor comodidad.
@@ -61,9 +53,6 @@ class OLS:
         if self.beta is None:
             raise ValueError("El modelo aún no ha sido ajustado. Llama primero al método 'fit'.")
 
-        # Añade la columna de intercepto a los nuevos datos.
-        X_con_intercepto = self._add_intercept(X)
-
         # Realiza las predicciones: y_pred = X * β
-        y_pred = np.matmul(X_con_intercepto, self.beta)
+        y_pred = np.matmul(X, self.beta)
         return y_pred

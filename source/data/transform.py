@@ -1,6 +1,6 @@
 import numpy as np
 
-def create_lagged_dataset(serie: np.ndarray, lag: int = 1) -> tuple[np.ndarray, np.ndarray]:
+def create_lagged_dataset(serie: np.ndarray, lag: int = 1, add_intercept=False) -> tuple[np.ndarray, np.ndarray]:
     """
     Transforma una serie de tiempo en un dataset supervisado con rezagos.
 
@@ -33,8 +33,13 @@ def create_lagged_dataset(serie: np.ndarray, lag: int = 1) -> tuple[np.ndarray, 
         y.append(serie[i])
 
     # Se convierten las listas a arrays de NumPy para operaciones eficientes
-    return np.array(X), np.array(y)
+    X = np.array(X) 
+    y = np.array(y)
+    
+    if add_intercept:
+        X = np.c_[np.ones(X.shape[0]), X]
 
+    return X, y
 
 def get_windows(serie: np.ndarray, n_ventanas: int, tamano_ventana: int) -> np.ndarray:
     """

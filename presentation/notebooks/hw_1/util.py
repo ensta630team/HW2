@@ -1,3 +1,5 @@
+import numpy as np
+import random
 import os
 
 def go_to_project_root():
@@ -35,3 +37,5 @@ def go_to_project_root():
         
         # Actualiza el directorio para la siguiente iteración del bucle.
         current_directory = parent_directory
+
+

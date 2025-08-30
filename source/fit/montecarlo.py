@@ -1,37 +1,31 @@
 import functools
-import multiprocessing
+import multiprocess
 import os
 import time
 from tqdm.auto import tqdm
+import pandas as pd
+
 
 def monte_carlo_mp(n_iterations: int = 1000, n_jobs: int = -1):
-    """
-    Decorador para ejecutar una simulación de Monte Carlo en paralelo.
-
-    Args:
-        n_iterations (int): El número total de iteraciones a ejecutar.
-        n_jobs (int): El número de procesos a utilizar. 
-                      -1 significa usar todos los núcleos de CPU disponibles.
-    """
+    # El resto de la función se mantiene exactamente igual...
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            # Determinar el número de procesos a usar
             if n_jobs == -1:
-                num_processes = os.cpu_count()
+                num_processes = 1
             else:
                 num_processes = min(n_jobs, os.cpu_count())
 
             print(f"Iniciando simulación paralela con {n_iterations} iteraciones en {num_processes} procesos...")
-
+            
             worker_func = functools.partial(func, *args, **kwargs)
             
-            # Creamos el pool de procesos
-            with multiprocessing.Pool(processes=num_processes) as pool:
+            with multiprocess.Pool(processes=num_processes) as pool:
                 results = list(tqdm(pool.imap(worker_func, range(n_iterations)), 
                                     total=n_iterations, 
                                     desc="Simulación Monte Carlo"))
-
+            results = pd.DataFrame(results)
+            results = results.to_dict(orient='list')
             return results
         return wrapper
     return decorator
