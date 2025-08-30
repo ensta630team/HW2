@@ -2,6 +2,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from source.display.print import check_num
 
+
 class TimeSeriesModel(ABC):
     """
     Clase base abstracta (plantilla) para modelos de series de tiempo univariadas.
@@ -11,8 +12,8 @@ class TimeSeriesModel(ABC):
     """
 
     def __init__(self, 
-                 c: float = 0.0, 
-                 sigma: float = 1.0):
+                 c: 0.0, 
+                 sigma: 1.0):
         """
         Inicializador de la clase base.
         
@@ -29,8 +30,8 @@ class TimeSeriesModel(ABC):
 
         # Inicializa variables para guardar en caché resultados de cálculos.
         self._is_stationary_cached = None
-        self._unconditional_mean = None
-        self._unconditional_std = None
+        self._unconditional_mean   = None
+        self._unconditional_std    = None
 
         # Calcula las propiedades incondicionales al crear el objeto.
         self._unconditional_mean = self.get_unconditional_mean()

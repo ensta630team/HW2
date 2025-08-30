@@ -26,14 +26,14 @@ def load_data(path):
     print('[INFO] ¡Datos cargados exitosamente!')
     return df
 
-def create_dataset(path, problem=3):
+def create_dataset(path, problem=5):
     """
     Carga y preprocesa los datos según el problema especificado.
 
     Argumentos:
         path (str): La ruta al archivo de datos.
         problem (int): El número del problema para determinar el preprocesamiento.
-
+        5 = problema 1 de la tarea 2
     Retorna:
         Un diccionario con las series de tiempo (si problem=3) o el DataFrame original (si problem=4).
     """
@@ -71,3 +71,31 @@ def create_dataset(path, problem=3):
     # Para el Problema 4, retorna los datos sin procesar.
     if problem == 4: 
         return df
+    
+    if problem == 5:
+        # Extrae las fechas de la columna 'Periodo'.
+        t = df['Periodo'].dt.date
+        t = t.to_numpy()
+
+        # Calcula la tasa de inflación (pi_t) como la diferencia logarítmica del IPC.
+        pi_t = np.log(df['IPC'] / df['IPC'].shift(12))
+        pi_t.dropna(inplace=True) # Elimina los valores NaN resultantes del shift.
+        pi_t = pi_t.to_numpy()
+
+        # Calcula el crecimiento del IMACEC (y_t) como la diferencia logarítmica.
+        y_t = np.log(df['IMACEC'] / df['IMACEC'].shift(12))
+        y_t.dropna(inplace=True)
+        y_t = y_t.to_numpy()
+
+        # Obtiene la tasa de política monetaria (i_t) y la convierte a decimal.
+        i_t = df['Tasa de política']/100.
+        i_t = i_t.to_numpy()
+
+        # Retorna un diccionario con las series de tiempo procesadas.
+        return {
+            't': t,
+            'pi': pi_t,
+            'y': y_t,
+            'i': i_t
+        }
+    
