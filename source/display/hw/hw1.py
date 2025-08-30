@@ -5,6 +5,8 @@ import seaborn as sns
 import os
 
 from source.statistics import calculate_acf, calculate_pacf
+from scipy import stats
+
 
 # --- Configuración de Estilo para los Gráficos ---
 # Se utiliza el estilo 'seaborn-v0_8-whitegrid' para un aspecto limpio.
@@ -447,3 +449,114 @@ def plot_simulation_paths(simulation_data: np.ndarray, model_name: str = "", num
     
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     return fig, axes
+
+def plot_f_distribution_comparison(f_samples: np.ndarray, dfn: int=2, dfd: int=97, fig=None, axes=None):
+    """
+    Compara la distribución empírica de estadísticos F de un Monte Carlo
+    con la distribución F teórica correspondiente.
+
+    Grafica la ECDF vs CDF y la densidad empírica (histograma) vs PDF.
+
+    Argumentos:
+        f_samples (np.ndarray): Un array 1D con los estadísticos F obtenidos de la simulación.
+        dfn (int): Grados de libertad del numerador para la F teórica.
+        dfd (int): Grados de libertad del denominador para la F teórica.
+        fig, axes (matplotlib objects, opcional): Figura y ejes preexistentes para graficar.
+
+    Retorna:
+        tuple: Una tupla con la figura y el array de ejes (fig, axes).
+    """
+    if fig is None or axes is None:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # --- 1. Cálculo de distribuciones ---
+    # ECDF (Empirical Cumulative Distribution Function)
+    x_ecdf = np.sort(f_samples)
+    y_ecdf = np.arange(1, len(x_ecdf) + 1) / len(x_ecdf)
+
+    # Rango para las curvas teóricas
+    x_theoretical = np.linspace(0, np.max(f_samples), 200)
+
+    # --- 2. Gráfico de CDF vs ECDF ---
+    ax1 = axes[0]
+    ax1.step(x_ecdf, y_ecdf, where='post', label='ECDF (Empírica)', color='darkblue', linewidth=1.5)
+    ax1.plot(x_theoretical, stats.f.cdf(x_theoretical, dfn, dfd), label=f'CDF F({dfn}, {dfd}) Teórica', color='darkred', linestyle='--')
+    ax1.set_title('ECDF Empírica vs. CDF Teórica', fontsize=FONT_SIZES['title'])
+    ax1.set_xlabel('Valor del Estadístico F', fontsize=FONT_SIZES['label'])
+    ax1.set_ylabel('Probabilidad Acumulada', fontsize=FONT_SIZES['label'])
+
+    # --- 3. Gráfico de Densidad (Histograma) vs PDF ---
+    ax2 = axes[1]
+    ax2.hist(f_samples, bins=50, density=True, alpha=0.6, color='darkblue', label='Densidad Empírica')
+    ax2.plot(x_theoretical, stats.f.pdf(x_theoretical, dfn, dfd), label=f'PDF F({dfn}, {dfd}) Teórica', color='darkred', linestyle='--')
+    ax2.set_title('Densidad Empírica vs. PDF Teórica', fontsize=FONT_SIZES['title'])
+    ax2.set_xlabel('Valor del Estadístico F', fontsize=FONT_SIZES['label'])
+    ax2.set_ylabel('Densidad', fontsize=FONT_SIZES['label'])
+    
+    # --- 4. Estilo y formato ---
+    for ax in axes:
+        ax.legend(fontsize=FONT_SIZES['legend'])
+        ax.grid(True, which='both', linestyle=':', linewidth=0.7)
+        ax.tick_params(axis='both', which='major', labelsize=FONT_SIZES['tick'])
+        ax.set_xlim(left=0) # El estadístico F no puede ser negativo
+
+    fig.tight_layout(pad=2.0)
+    return fig, axes
+
+def plot_chow_distribution_comparison(chow_samples: np.ndarray, 
+                                      dfn: int=3, 
+                                      dfd: int=94, 
+                                      fig=None, axes=None):
+    """
+    Compara la distribución empírica de estadísticos de Chow de un Monte Carlo
+    con la distribución F teórica correspondiente.
+
+    Grafica la ECDF vs CDF y la densidad empírica (histograma) vs PDF.
+
+    Argumentos:
+        chow_samples (np.ndarray): Un array 1D con los estadísticos de Chow de la simulación.
+        dfn (int): Grados de libertad del numerador (usualmente k).
+        dfd (int): Grados de libertad del denominador (usualmente n - 2k).
+        fig, axes (matplotlib objects, opcional): Figura y ejes preexistentes.
+
+    Retorna:
+        tuple: Una tupla con la figura y el array de ejes (fig, axes).
+    """
+    if fig is None or axes is None:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # --- 1. Cálculo de distribuciones ---
+    # ECDF (Función de Distribución Acumulada Empírica)
+    x_ecdf = np.sort(chow_samples)
+    y_ecdf = np.arange(1, len(x_ecdf) + 1) / len(x_ecdf)
+
+    # Rango para las curvas teóricas, asegurando que cubra la cola de la distribución
+    x_max = np.percentile(chow_samples, 99.5) # Usar un percentil para evitar outliers extremos
+    x_theoretical = np.linspace(0, x_max, 200)
+
+    # --- 2. Gráfico de CDF vs ECDF ---
+    ax1 = axes[0]
+    ax1.step(x_ecdf, y_ecdf, where='post', label='ECDF (Empírica)', color='darkblue', linewidth=1.5)
+    ax1.plot(x_theoretical, stats.f.cdf(x_theoretical, dfn, dfd), label=f'CDF F({dfn}, {dfd}) Teórica', color='darkred', linestyle='--')
+    ax1.set_title('ECDF Empírica vs. CDF Teórica \n(Test de Chow)', fontsize=FONT_SIZES['title'])
+    ax1.set_xlabel('Valor del Estadístico de Chow', fontsize=FONT_SIZES['label'])
+    ax1.set_ylabel('Probabilidad Acumulada', fontsize=FONT_SIZES['label'])
+
+    # --- 3. Gráfico de Densidad (Histograma) vs PDF ---
+    ax2 = axes[1]
+    ax2.hist(chow_samples, bins=50, density=True, alpha=0.6, color='darkblue', label='Densidad Empírica')
+    ax2.plot(x_theoretical, stats.f.pdf(x_theoretical, dfn, dfd), label=f'PDF F({dfn}, {dfd}) Teórica', color='darkred', linestyle='--')
+    ax2.set_title('Densidad Empírica vs. PDF Teórica \n(Test de Chow)', fontsize=FONT_SIZES['title'])
+    ax2.set_xlabel('Valor del Estadístico de Chow', fontsize=FONT_SIZES['label'])
+    ax2.set_ylabel('Densidad', fontsize=FONT_SIZES['label'])
+    
+    # --- 4. Estilo y formato ---
+    for ax in axes:
+        ax.legend(fontsize=FONT_SIZES['legend'])
+        ax.grid(True, which='both', linestyle=':', linewidth=0.7)
+        ax.tick_params(axis='both', which='major', labelsize=FONT_SIZES['tick'])
+        ax.set_xlim(left=0, right=x_max) # Limitar el eje x para una mejor visualización
+
+    fig.tight_layout(pad=2.0)
+    return fig, axes
+

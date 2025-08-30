@@ -1,3 +1,6 @@
+import numpy as np 
+
+
 def check_num(number):
     """
     Formatea un número para su visualización, manejando casos especiales.
@@ -18,3 +21,12 @@ def check_num(number):
     # Para cualquier otro tipo (como enteros), simplemente lo convierte a cadena.
     else:       
         return str(number)
+    
+def print_valores_criticos(values):
+    estadisticos = np.sort(values)
+    critic_value_1  = np.percentile(estadisticos, 99)
+    critic_value_5  = np.percentile(estadisticos, 95)
+    critic_value_10 = np.percentile(estadisticos, 90)
+    print("Valor crítico al 1%:", critic_value_1)
+    print("Valor crítico al 5%:", critic_value_5)
+    print("Valor crítico al 10%:", critic_value_10)

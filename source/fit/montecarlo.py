@@ -7,7 +7,6 @@ import pandas as pd
 
 
 def monte_carlo_mp(n_iterations: int = 1000, n_jobs: int = -1):
-    # El resto de la función se mantiene exactamente igual...
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -30,7 +29,7 @@ def monte_carlo_mp(n_iterations: int = 1000, n_jobs: int = -1):
         return wrapper
     return decorator
 
-def monte_carlo(n_iterations: int = 1000, pass_iteration: bool = False):
+def monte_carlo(n_iterations: int = 1000):
     """
     Decorador para ejecutar una función múltiples veces en una simulación de Monte Carlo.
 
@@ -42,24 +41,16 @@ def monte_carlo(n_iterations: int = 1000, pass_iteration: bool = False):
     """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):            
+        def wrapper(*args, **kwargs):         
             # Lista para almacenar los resultados de cada iteración
             results = []
-            
             # Bucle principal de la simulación con una barra de progreso
             for i in tqdm(range(n_iterations), desc="Simulación Monte Carlo"):
-                
-                # Prepara los argumentos para la función original
-                current_kwargs = kwargs.copy()
-                if pass_iteration:
-                    current_kwargs['iteration'] = i
-                
-                # Ejecuta la función original (una iteración de la simulación)
-                step_result = func(*args, **current_kwargs)
-                
+                step_result = func(*args, **kwargs)
                 # Guarda el resultado de la iteración
                 results.append(step_result)
-            
+            results = pd.DataFrame(results)
+            results = results.to_dict(orient='list')
             return results
         return wrapper
     return decorator

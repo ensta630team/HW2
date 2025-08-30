@@ -1,38 +1,21 @@
 import numpy as np
 
-def create_lagged_dataset(serie: np.ndarray, lag: int = 1, add_intercept=False) -> tuple[np.ndarray, np.ndarray]:
+def create_lagged_dataset(serie: np.ndarray, lag: int = 1, add_intercept=True) -> tuple[np.ndarray, np.ndarray]:
     """
     Transforma una serie de tiempo en un dataset supervisado con rezagos.
-
-    Args:
-        serie (np.ndarray): Un array de NumPy 1D que representa la serie de tiempo.
-        n_rezagos (int): El número de pasos de tiempo anteriores (rezagos) que se usarán como
-                         características de entrada (X).
-
-    Returns:
-        tuple[np.ndarray, np.ndarray]: Una tupla que contiene:
-            - X (np.ndarray): Matriz 2D donde cada fila contiene los 'n_rezagos' valores
-                              anteriores.
-            - y (np.ndarray): Array 1D con el valor objetivo correspondiente a cada fila de X.
     """
-    # Se inicializan listas vacías para almacenar los datos
     X, y = [], []
 
-    # Se asegura de que la serie sea un array de NumPy
     if isinstance(serie, list):
         serie = np.array(serie)
 
-    # El bucle comienza en el primer punto donde hay suficientes datos pasados (n_rezagos)
-    # y termina al final de la serie.
     for i in range(lag, len(serie)):
-        # La ventana de características (X) es la subsecuencia desde [t - n_rezagos] hasta [t-1]
-        rezagos = serie[i - lag:i]
+        # [y_{t-1}, y_{t-2}, ...]
+        rezagos = serie[i - lag:i][::-1]
         X.append(rezagos)
         
-        # El objetivo (y) es el valor en el tiempo actual [t]
         y.append(serie[i])
 
-    # Se convierten las listas a arrays de NumPy para operaciones eficientes
     X = np.array(X) 
     y = np.array(y)
     
