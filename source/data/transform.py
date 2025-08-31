@@ -1,5 +1,47 @@
 import numpy as np
 
+def create_var_dataset(data: np.ndarray, lag: int, add_intercept: bool = True) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Transforma un conjunto de series de tiempo en un dataset supervisado
+    para un modelo VAR(p=lag).
+
+    Argumentos:
+    data (np.ndarray): Array de forma (T, n) con T observaciones y n variables.
+    lag (int): Número de rezagos (p) a incluir.
+    add_intercept (bool): Si es True, añade una columna de unos para el intercepto.
+
+    Retorna:
+    tuple: (X, Y)
+        X (np.ndarray): Matriz de regresores con forma (T-lag, np+1).
+        Y (np.ndarray): Matriz de variables objetivo con forma (T-lag, n).
+    """
+    X, Y = [], []
+    
+    # El bucle comienza en 'p' porque necesitamos 'lag' observaciones pasadas.
+    for i in range(lag, len(data)):
+        # La variable objetivo Y_t es el vector de todas las variables en el tiempo i.
+        target_vector = data[i]
+        Y.append(target_vector)
+        
+        # El vector de regresores se construye con los 'lag' rezagos de TODAS las variables.
+        # Tomamos las 'lag' filas anteriores: de data[i-lag] a data[i-1]
+        # Las aplanamos para crear un único vector de regresores.
+        # [y1_{t-1}, y2_{t-1}, ..., yn_{t-1}, y1_{t-2}, ..., yn_{t-lag}]
+        lags_matrix = data[i-lag:i]
+        
+        # Invertimos el orden de las filas para que el primer rezago (t-1) venga primero.
+        regressor_vector = np.flip(lags_matrix, axis=0).flatten()
+        X.append(regressor_vector)
+
+    X = np.array(X)
+    Y = np.array(Y)
+    
+    if add_intercept:
+        # Añadimos la columna de unos al principio de la matriz X.
+        X = np.c_[np.ones(X.shape[0]), X]
+        
+    return X, Y
+
 def create_lagged_dataset(serie: np.ndarray, lag: int = 1, add_intercept=True) -> tuple[np.ndarray, np.ndarray]:
     """
     Transforma una serie de tiempo en un dataset supervisado con rezagos.

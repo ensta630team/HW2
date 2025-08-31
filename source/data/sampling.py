@@ -54,6 +54,52 @@ def generate_stationary_phi(p: int) -> np.ndarray:
     phi = -np.real(poly_coeffs[:-1][::-1])
     return phi.reshape(1, p)
 
+def generate_stationary_var(n: int, p: int, eig_max: float = 0.98):
+    """
+    Genera los parámetros para un modelo VAR(p) aleatorio y garantizado 
+    como estacionario.
+
+    Argumentos:
+        n (int): El número de variables del sistema (inp_dim).
+        p (int): El orden de rezagos del VAR.
+        eig_max (float): El módulo máximo para los eigenvalores generados (debe ser < 1).
+    """
+    if eig_max >= 1.0:
+        raise ValueError("eig_max debe ser menor que 1 para garantizar la estacionariedad.")
+        
+    n_eigs = n * p
+
+    # Generar Eigenvalores Estables (dentro del círculo unitario)
+    eigs = []
+    for _ in range(n_eigs // 2):
+        modulus = np.random.uniform(0, eig_max)
+        angle = np.random.uniform(0, np.pi)
+        eig = modulus * np.exp(1j * angle)
+        eigs.extend([eig, np.conj(eig)]) # Añadir par conjugado
+        
+    if n_eigs % 2 != 0:
+        eigs.append(np.random.uniform(-eig_max, eig_max))
+    
+    eigs = np.array(eigs)
+
+    # Construir la Matriz Compañera F
+    D = np.diag(eigs)
+    P = np.random.randn(n_eigs, n_eigs)
+    F = P @ D @ np.linalg.inv(P)
+    F = F.real
+
+
+    # Extraer las Matrices de Coeficientes Phi de F
+    phi_stacked = F[:n, :]
+    phi = np.array(np.split(phi_stacked, p, axis=1))
+
+    # Generar Intercepto C y Matriz de Covarianzas Omega
+    c = np.random.randn(n) * 0.1
+    rand_matrix = np.random.randn(n, n) * 0.5
+    omega = rand_matrix.T @ rand_matrix + np.eye(n) * 0.1 # Asegura que no sea singular
+    
+    return phi, c, omega
+
 def initialize_params(params_distribution, **kwargs):
     """
     Inicializa los parámetros de un modelo de forma flexible.
