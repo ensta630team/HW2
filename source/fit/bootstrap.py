@@ -1,6 +1,10 @@
 # HW2/source/fit/bootstrap.py
 
 import numpy as np
+import sympy as sp
+import statsmodels.api as sm
+from source.models.var import VAR
+from source.statistics.impulse_response import compute_IRF_VAR
 from source.data.transform import create_lagged_dataset
 from source.models.ols import OLS
 from source.fit.inference import test_F
@@ -139,3 +143,68 @@ def get_bootstrap_critical_values(f_stat_distribution: np.ndarray, alphas: list 
         critical_values[alpha] = np.percentile(f_stat_distribution, (1 - alpha) * 100)
         
     return critical_values
+
+
+# ================================================================================================================
+# ================================================================================================================
+# ================================================================================================================
+
+# Intervalos de Confianza Bootstraps
+def bootstrap_IRF_intervals(X, p, H, n_boot=1000, alpha=0.05):
+    """
+    Bootstrap completo que re-estima el VAR en cada réplica
+    """
+    T, n = X.shape
+    IRF_boot = []
+    
+    # Estimar modelo original para obtener coeficientes iniciales
+    model = sm.tsa.VAR(X)
+    results = model.fit(p)
+    Phi_original = [results.coefs[i] for i in range(p)]
+    omega_original = results.sigma_u
+    residuals_original = results.resid
+    
+    for i in range(n_boot):
+        try:
+            # Generar residuos bootstrap (resampling con reemplazo)
+            indices = np.random.choice(T-p, size=T-p, replace=True)
+            residuals_boot = residuals_original[indices]
+            
+            # Generar datos bootstrap recursivamente
+            X_boot = np.zeros_like(X)
+            X_boot[:p] = X[:p]  # Valores iniciales
+            
+            for t in range(p, T):
+                # Componente determinística (constantes, etc.)
+                deterministic = results.intercept if hasattr(results, 'intercept') else 0
+                
+                # Componente autorregresiva
+                ar_component = 0
+                for lag in range(1, p+1):
+                    ar_component += np.dot(Phi_original[lag-1], X_boot[t-lag])
+                
+                X_boot[t] = deterministic + ar_component + residuals_boot[t-p]
+            
+            # Re-estimar VAR con datos bootstrap
+            
+            # Calcular IRF ========
+            VARaux = VAR(inp_dim=X_boot.shape[1], p=p)
+            VARaux.fit(X_boot)
+            omega_boot = VARaux.omega_hat
+            Psi_boot = VARaux._compute_psi_sequence(H)
+            IRF_sequence = [compute_IRF_VAR(Psi_boot, omega_boot, s) for s in range(H)]
+            IRF_boot.append(IRF_sequence)
+            
+        except Exception as e:
+            print(f"Error en la réplica {i+1}: {e}")
+            continue
+    
+    # Calcular intervalos de confianza
+    IRF_boot = np.array(IRF_boot)
+    lower_percentile = 100 * alpha/2
+    upper_percentile = 100 * (1 - alpha/2)
+
+    IRF_lower = np.percentile(IRF_boot, lower_percentile, axis=0)
+    IRF_upper = np.percentile(IRF_boot, upper_percentile, axis=0)
+    
+    return IRF_lower, IRF_upper

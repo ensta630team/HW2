@@ -237,6 +237,11 @@ class VAR:
     # ===================================================================================
     # ====== METODOS PRIVADOS ===========================================================
     # ===================================================================================
+    def _decompose_matrix(self, H=5):
+        psi = self._compute_psi_sequence(H+1)
+        M = irf.compute_variance_decomposition(psi, self.omega_hat, H)
+        return M
+    
     def _compute_psi_sequence(self, H: int) -> list:
         """
         Calcula la sucesión de matrices Ψ_i para i = 0, ..., H-1.
