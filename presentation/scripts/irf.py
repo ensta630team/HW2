@@ -1,29 +1,26 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from statsmodels.tsa.api import VAR
+import numpy as np
 
-
-from source.models.var import VAR as VAROWN
 from presentation.scripts.generator import generate_var_process
 from presentation.scripts.test_fn import get_GIRD
-
+from source.models.var import VAR as VAROWN
+from statsmodels.tsa.api import VAR
 
 T_sim = 100
 df_simulated = generate_var_process(T=T_sim)
 
-# --- 4. Ajustar un Modelo VAR a los Datos Simulados ---
+# Ajustar un Modelo VAR a los Datos Simulados ---
 model = VAR(df_simulated)
 results = model.fit(2)
 
-
-# --- 5. Crear la IRF utilizando Generalized Impulse Response Function (GIRF) ---
+# Crear la IRF utilizando Generalized Impulse Response Function (GIRF) ---
 n_periods = 20
 sigma_u_df  = results.resid.cov()
 sigma_u     = sigma_u_df.values
 irf_results = results.irf(n_periods)
 
-# no estoy seguro que es esto y para que sirve dentr de GIRF 
+# No estoy seguro que es esto y para que sirve dentr de GIRF 
 psi_coeffs  = irf_results.irfs 
 
 k = df_simulated.shape[1]
