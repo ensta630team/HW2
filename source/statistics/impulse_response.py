@@ -82,7 +82,7 @@ def cholesky_irf(psi, omega, H):
     except np.linalg.LinAlgError:
         # Si falla Cholesky (no es pos-def), usamos LU
         _, L, _ = lu(omega)
-
+    
     # Calcular la IRF para cada horizonte s
     irf_list = [psi @ L for psi in psi]
     

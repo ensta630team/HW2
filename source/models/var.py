@@ -201,7 +201,7 @@ class VAR:
         # Creamos la matriz de predictores con "p" rezagos
         X_ols, y_ols = create_var_dataset(X, lag=self.p, add_intercept=True)
         T_effective = X_ols.shape[0]
-
+        
         # Ajustamos el modelo y guardamos la matriz de coeficientes completa
         self.pi = np.linalg.inv(X_ols.T @ X_ols) @ (X_ols.T @ y_ols)
 
