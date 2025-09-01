@@ -33,7 +33,7 @@ class VAR:
         else:
             self.sigma = sigma
         
-        self.omega_hat = None
+        self.omega_hat = np.diag(self.sigma**2) # Si no hay modelo ajustado se asume sigma
         self._is_stationary_cached = None
 
         if params_distribution=='stationary':
@@ -170,25 +170,6 @@ class VAR:
             
         # Descartar el período de burn-in y devolver ---
         return samples[burn_in:]
-
-    def _is_stationary(self) -> bool:
-        """
-        Verifica si el proceso es estacionario usando un valor en caché.
-        """
-        if self._is_stationary_cached is None:
-            self._is_stationary_cached, ev = self._check_stationarity()
-        return self._is_stationary_cached
-    
-    def _check_stationarity(self) -> bool:
-        """
-        Revisa si los eigenvalores de la matriz F son menores a 1 en módulo.
-        """
-        if self.p == 0:
-            return True
-            
-        F = self._build_F_matrix()
-        eigenvalues = np.linalg.eigvals(F)
-        return np.all(np.abs(eigenvalues) < 1.), eigenvalues
         
     def fit(self, X):
         # Creamos la matriz de predictores con "p" rezagos
@@ -229,6 +210,29 @@ class VAR:
 
 
     # ====== METODOS PRIVADOS ====== 
+    def _is_stationary(self) -> bool:
+        """
+        Verifica si el proceso es estacionario usando un valor en caché.
+        """
+        self._is_stationary_cached, ev = self._check_stationarity()
+        if not self._is_stationary_cached:
+            print('[NE]. abs Eigenvalues: ', np.abs(ev))
+
+        return self._is_stationary_cached
+    
+    def _check_stationarity(self) -> bool:
+        """
+        Revisa si los eigenvalores de la matriz F son menores a 1 en módulo.
+        """
+        if self.p == 0:
+            return True
+            
+        F = self._build_F_matrix()
+        eigenvalues = np.linalg.eigvals(F)
+        self._is_stationary_cached = np.all(np.abs(eigenvalues) < 1)
+        
+        return self._is_stationary_cached, eigenvalues
+    
     def _build_Pi_matrix(self):
         if self.phi is None or self.c is None:
             return None
