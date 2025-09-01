@@ -1,5 +1,6 @@
 import numpy as np
-from scipy.linalg import lu
+from scipy.linalg import cholesky
+from scipy.stats import norm
 
 # Determinar los Ψ_i_s por recurrencia
 def compute_psi_sequence(Phi, p, n_terms):
@@ -43,51 +44,72 @@ def compute_psi_sequence(Phi, p, n_terms):
     
     return Psi
 
-# Cálculo del IRF mediante triangularización
+################################################################################
+################################################################################
+
+# Cálculo del IRF mediante descomposición de Cholesky
 def compute_IRF_VAR(Psi, omega, s):
-    """"
-    Cálculo de IRF dado el vector de matrices Psi asociadas al VAR
-
-    Argumentos:
-        Phi     : Vector formado por las matrices Φ_i
-        omega   : Matriz de Covarianzas
-        s       : Horizonte que se quiere
-
-    Retornará:
-        Psi_s*a_j (a_j columna j de la matriz triangular A)    
     """
-
-    # Descomponer triangularmente la matriz omega
-    P, L, U = lu(omega) # L es la matriz triangular inferior
-
+    Cálculo corregido de IRF usando descomposición de Cholesky
+    """
+    # Descomposición de Cholesky (triangular inferior)
+    L = cholesky(omega, lower=True)
+    
     # Cálculo del IRF
     IRF_s = np.dot(Psi[s], L)
-
+    
     return IRF_s
 
-    # Ejemplo de uso
-if __name__ == "__main__":
-    
-    p = 2
-    n_terms = 12
-    
-    # Definir matrices Φ₁ y Φ₂
-    Phi1 = np.array([[0.5, 0.2], [0.3, 0.4]])
-    Phi2 = np.array([[0.1, 0.0], [0.0, 0.1]])
-    Phi = [Phi1, Phi2]
-    
-    # Calcular la sucesión Ψ
-    Psi_sequence = compute_psi_sequence(Phi, p, n_terms)
+################################################################################
+################################################################################
 
-    omega = np.array([[2, 1], [1, 3]])
-    s = 2
-
-    # Calcular IRF
-    IRF_compute = compute_IRF_VAR(Psi_sequence,omega,s)
-    print("Sucesión Ψ_i:")
-    for i, psi in enumerate(Psi_sequence):
-        print(f"Ψ_{i} =")
-        print(psi)
-        print()
-    print(IRF_compute)
+# Intervalos de confianza
+def bootstrap_IRF_intervals(X, Phi, omega, p, n_terms, n_boot=1000, alpha=0.05):
+    """
+    Calcula intervalos de confianza para IRF usando bootstrap
     
+    Argumentos:
+        X        : Matriz de datos original (T × n)
+        Phi      : Lista de matrices de coeficientes estimados
+        omega    : Matriz de covarianza estimada
+        p        : Número de retardos
+        n_terms  : Número de horizontes
+        n_boot   : Número de réplicas bootstrap
+        alpha    : Nivel de significancia
+    
+    Retorna:
+        IRF_lower, IRF_upper: Límites inferior y superior para cada horizonte
+    """
+    T, n = X.shape
+    IRF_boot = []
+    
+    # Bootstrap
+    for i in range(n_boot):
+        # Generar datos bootstrap
+        residuals_boot = np.random.multivariate_normal(np.zeros(n), omega, T)
+        X_boot = np.zeros_like(X)
+        
+        # Inicializar con datos reales
+        X_boot[:p] = X[:p]
+        
+        # Generar serie bootstrap
+        for t in range(p, T):
+            X_boot[t] = np.sum([np.dot(Phi[j], X_boot[t-j-1]) for j in range(p)], axis=0)
+            X_boot[t] += residuals_boot[t]
+        
+        # Re-estimar VAR y calcular IRF (simplificado)
+        # En la práctica aquí se re-estimarían los coeficientes Phi_boot
+        # Para este ejemplo, usamos los mismos Phi pero con omega bootstrap
+        omega_boot = np.cov(residuals_boot.T)
+        Psi_boot = compute_psi_sequence(Phi, p, n_terms)
+        IRF_boot.append([compute_IRF_VAR(Psi_boot, omega_boot, s) for s in range(n_terms)])
+    
+    # Calcular intervalos de confianza
+    IRF_boot = np.array(IRF_boot)
+    lower_percentile = 100 * alpha/2
+    upper_percentile = 100 * (1 - alpha/2)
+    
+    IRF_lower = np.percentile(IRF_boot, lower_percentile, axis=0)
+    IRF_upper = np.percentile(IRF_boot, upper_percentile, axis=0)
+    
+    return IRF_lower, IRF_upper
