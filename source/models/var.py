@@ -33,7 +33,7 @@ class VAR:
         else:
             self.sigma = sigma
         
-        self.omega_hat = np.diag(self.sigma**2) # Si no hay modelo ajustado se asume sigma
+        self.omega_hat = np.diag(self.sigma**2)
         self._is_stationary_cached = None
 
         if params_distribution=='stationary':
@@ -170,7 +170,27 @@ class VAR:
             
         # Descartar el período de burn-in y devolver ---
         return samples[burn_in:]
-        
+
+    def _is_stationary(self) -> bool:
+        """
+        Verifica si el proceso es estacionario usando un valor en caché.
+        """
+    
+        self._is_stationary_cached, ev = self._check_stationarity()
+        return self._is_stationary_cached
+    
+    def _check_stationarity(self) -> bool:
+        """
+        Revisa si los eigenvalores de la matriz F son menores a 1 en módulo.
+        """
+        if self.p == 0:
+            return True
+            
+        F = self._build_F_matrix()
+        eigenvalues = np.linalg.eigvals(F)
+        self._is_stationary_cached = np.all(np.abs(eigenvalues) < 1)
+        return self._is_stationary_cached, eigenvalues
+
     def fit(self, X):
         # Creamos la matriz de predictores con "p" rezagos
         X_ols, y_ols = create_var_dataset(X, lag=self.p, add_intercept=True)
@@ -208,31 +228,66 @@ class VAR:
             raise ValueError("El modelo debe ser ajustado primero con el método .fit()")
         return X @ self.pi
 
+    def get_irf_generalizado(self, phi: np.ndarray, sigma: np.ndarray, H: int = 20) -> np.ndarray:
+        """
+        Calcula la Función de Impulso-Respuesta (IRF) de Pesaran y Shin.
+        """
+         # Calculamos coeficientes del proceso MA infinito
+        n = self.inp_dim
+        # Obtenemos el número de variables independientes
+        p = self.p
+        # Horizonte de tiempo
+        s = 20
+
+        # Trasponemos los coeficientes para que coincidan las dimensiones
+        coeficientes = np.transpose(self.phi, (1, 2, 0))
+
+        # Imponemos la condición inicial
+        A_0 = np.eye(n)
+        historial_A = [np.zeros_like(A_0)] * p + [A_0]
+        # Definimos una matriz vacía para almacenar los resultados
+        A = [A_0]
+
+        # Bucle para calcular A_i en cada periodo
+        for i in range(1, H + 1):
+            A_i = np.zeros_like(A_0)
+
+            for j in range(p):
+                Bj = coeficientes[:,:,j]
+
+                # Obtenemos la matriz A_{j-1}
+                A_pasado = historial_A[-(j+1)]
+
+                # Aplicamos la fórmula: A_i += Bj * A_{j-1}
+                A_i += np.dot(Bj, A_pasado)
+
+            # Guardar el resultado y actualizar el historial
+            A.append(A_i)
+            historial_A.append(A_i)
+            historial_A.pop(0)  # Mantener el historial con tamaño fijo
+
+        # ---- Calculo la función de impulso respuesta ---- 
+
+        # Preparamos el array final para almacenar todas las respuestas
+        irf_resultados = np.zeros((s + 1, n, n))
+
+        # Bucle para cada horizonte de tiempo
+        for h, An in enumerate(A): 
+            for j in range(n):  # Para cada variable de respuesta
+                # Vector de selección e_j
+                e_j = np.zeros(n)
+                e_j[j] = 1
+
+                # numerador
+                numerador = np.dot(An, self.omega_hat[:,j])
+                # denominador
+                denominador = np.sqrt(self.omega_hat[j,j])
+                irf_resultados[h,:,j] = numerador / denominador
+
+        return irf_resultados
+
 
     # ====== METODOS PRIVADOS ====== 
-    def _is_stationary(self) -> bool:
-        """
-        Verifica si el proceso es estacionario usando un valor en caché.
-        """
-        self._is_stationary_cached, ev = self._check_stationarity()
-        if not self._is_stationary_cached:
-            print('[NE]. abs Eigenvalues: ', np.abs(ev))
-
-        return self._is_stationary_cached
-    
-    def _check_stationarity(self) -> bool:
-        """
-        Revisa si los eigenvalores de la matriz F son menores a 1 en módulo.
-        """
-        if self.p == 0:
-            return True
-            
-        F = self._build_F_matrix()
-        eigenvalues = np.linalg.eigvals(F)
-        self._is_stationary_cached = np.all(np.abs(eigenvalues) < 1)
-        
-        return self._is_stationary_cached, eigenvalues
-    
     def _build_Pi_matrix(self):
         if self.phi is None or self.c is None:
             return None
