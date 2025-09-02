@@ -311,3 +311,43 @@ def plot_time_series(
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     
     return fig, axes
+
+def plot_with_user_style(girf_results, variable_names, fig=None, axes=None):
+    """
+    Grafica la matriz de GIRF utilizando la estructura de bucles y
+    títulos proporcionada por el usuario.
+    """
+    # 1. Obtener dimensiones
+    horizonte, k, _ = girf_results.shape
+
+    # 2. Crear la cuadrícula de gráficos (código proporcionado)
+    if fig is None or axes is None:
+        fig, axes = plt.subplots(k, k, figsize=(5, 4), sharex=True)
+
+    fig.suptitle('Funciones de Respuesta\nal Impulso', fontsize=FONT_SIZES['title'])
+
+    # 3. Iterar para llenar cada subgráfico (código proporcionado)
+    for j in range(k):  # Columna: Shock en la variable j
+        for i in range(k):  # Fila: Respuesta de la variable i
+
+            # --- ADAPTACIÓN CLAVE ---
+            # Se extrae la respuesta de la variable 'i' al shock en la variable 'j'
+            # del array 3D estándar. Esto es equivalente a tu 'all_irfs[j][:, i]'.
+            response = girf_results[:, i, j]
+
+            ax = axes[i, j]
+            ax.plot(range(horizonte), response, marker='.', linestyle='-', color='k')
+            ax.axhline(0, color='darkred', linewidth=0.8, linestyle='--')
+
+            # Usamos los nombres de las variables en lugar de los genéricos
+            ax.set_title(f'Respuesta de {variable_names[i]} \na Shock en {variable_names[j]}', fontsize=FONT_SIZES['title'])
+
+            # Etiquetas solo en los bordes para mayor claridad
+            if i == k - 1:
+                ax.set_xlabel('Períodos', fontsize=FONT_SIZES['label'])
+            if j == 0:
+                ax.set_ylabel('Respuesta', fontsize=FONT_SIZES['label'])
+
+    # 4. Ajustar y mostrar el gráfico (código proporcionado)
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    return fig, axes
