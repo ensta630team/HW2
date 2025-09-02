@@ -1,4 +1,3 @@
-````markdown
 # Tarea 2: Modelos VAR y Análisis de Series de Tiempo
 
 Este repositorio contiene el código y los análisis para la Tarea 2, enfocada en la estimación de modelos de Vectores Autorregresivos (VAR) para series de tiempo macroeconómicas.
@@ -19,7 +18,7 @@ Todo lo que necesitas está listado en el archivo `requirements.txt`. Para insta
 
 ```bash
 pip install -r requirements.txt
-````
+```
 
 ### 3. Ejecutar el análisis
 
