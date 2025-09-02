@@ -2,11 +2,7 @@
 
 Este repositorio contiene el código y los análisis para la Tarea 2, enfocada en la estimación de modelos de Vectores Autorregresivos (VAR) para series de tiempo macroeconómicas.
 
----
-
-## ¿Cómo usar este repositorio?
-
-Si no tienes mucha experiencia con Python, sigue estos pasos para ver y ejecutar el análisis.
+![https://github.com/ensta630team/HW2/blob/main/presentation/figures/diagrama.png?raw=true](https://github.com/ensta630team/HW2/blob/main/presentation/figures/diagrama.png?raw=true)
 
 ### 1. Requisitos
 
