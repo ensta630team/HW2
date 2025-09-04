@@ -1,8 +1,8 @@
-# Tarea 2: Modelos VAR y Análisis de Series de Tiempo
+# Tarea 3: Series de tiempo No Estacionarias
 
-Este repositorio contiene el código y los análisis para la Tarea 2, enfocada en la estimación de modelos de Vectores Autorregresivos (VAR) para series de tiempo macroeconómicas.
+Este repositorio contiene el código y los análisis para la Tarea 3, enfocada en test de estimacion de raices unitarias
 
-![https://github.com/ensta630team/HW2/blob/main/presentation/figures/diagrama.png?raw=true](https://github.com/ensta630team/HW2/blob/main/presentation/figures/diagrama.png?raw=true)
+![https://github.com/ensta630team/HW2/blob/main/presentation/figures/diagrama.png?raw=true](https://github.com/ensta630team/Homeworks/blob/main/presentation/figures/diagrama.png?raw=true)
 
 ### 1. Requisitos
 
