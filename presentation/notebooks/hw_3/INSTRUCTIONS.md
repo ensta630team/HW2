@@ -1,6 +1,21 @@
 # Guía de Programación para Tests de Raíz Unitaria
 
-Este documento contiene las instrucciones para la programación de los tests de raíz unitaria listados en la tarea. El objetivo es que los programadores implementen la lógica de cada test, respetando un formato de función estándar, para que puedan ser evaluados en los notebooks de prueba.
+Este documento contiene las instrucciones para la programación de los tests de raíz unitaria listados en la tarea. El objetivo es que implementen la lógica de cada test, respetando un formato de función estándar, para que puedan ser evaluados en los notebooks de prueba.
+
+
+---
+
+### 0. Importante: Actualiza tu Repositorio ⚠️
+
+Antes de comenzar, es **crucial** que te asegures de tener la última versión del repositorio para evitar conflictos. Sigue estos pasos para actualizar y crear tu rama de trabajo desde VS Code:
+
+1.  **Abre el panel de control de Git:** Haz clic en el icono de Git en la barra lateral de VS Code (el tercer icono desde arriba).
+2.  **Sincroniza los cambios:** En la parte superior del panel de Git, haz clic en el icono de los puntos suspensivos (...) y selecciona 'Pull, Push' -> 'Pull from...' y luego elige 'origin/main' o la rama principal del proyecto. Esto descargará todos los cambios recientes.
+3.  **Crea tu nueva rama:** Una vez que el 'pull' haya terminado, haz clic en el nombre de la rama actual en la esquina inferior izquierda de la ventana de VS Code. Se abrirá un menú. Elige '+ Create new branch...'.
+4.  **Nombra tu rama:** Escribe un nombre descriptivo para tu rama (por ejemplo, 'feature/kpss-test'). Presiona 'Enter'.
+5.  **Comienza a trabajar:** Ahora estás en tu propia rama de trabajo y puedes empezar a programar sin afectar la rama principal.
+
+---
 
 ---
 
