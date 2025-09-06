@@ -1,10 +1,14 @@
 import numpy as np 
 import sympy as sp
 
+from scipy.linalg import lu
+from scipy.linalg import cholesky
+
+
 def calculate_irf(F, H, phi=None, method='exact'):
     """
     Calcula la Función de Impulso-Respuesta (IRF) para un horizonte H.
-
+    Esta funcion esta hecha para una matriz F de un modelo univariado
     Argumentos:
         F (np.ndarray): La matriz acompañante del proceso.
         H (int): El horizonte (número de períodos) para el cálculo.
@@ -54,3 +58,104 @@ def calculate_irf(F, H, phi=None, method='exact'):
             irf_values[h] = np.dot(coeffs_to_use, past_values[::-1])
     
     return irf_values
+
+
+# ============================================================================
+# ====================  ~~~~VAR~~~~ ==========================================
+# ============================================================================
+def compute_IRF_VAR(Psi, omega, s):
+    """
+    Cálculo de IRF usando descomposición de Cholesky
+    """
+    L = cholesky(omega, lower=True)
+    IRF_s = np.dot(Psi[s], L)
+    return IRF_s
+
+def cholesky_irf(psi, omega, H):
+    """
+    Calcula la Función de Impulso-Respuesta (IRF) para H periodos.
+    
+    Argumentos:
+        H (int): El horizonte de tiempo para el cual calcular la IRF.
+
+    Retorna:
+        np.ndarray: Un array de forma (H, n, n) donde n es el inp_dim.
+                    Cada matriz IRF[s, :, :] es la respuesta en el tiempo s.
+    """
+    
+    # Descomponer triangularmente la matriz de covarianzas
+    # Usamos la descomposición de Cholesky que es más estándar para matrices simétricas.
+    # Es numéricamente más estable y garantiza una matriz triangular inferior única.
+    try:
+        L = np.linalg.cholesky(omega)
+    except np.linalg.LinAlgError:
+        # Si falla Cholesky (no es pos-def), usamos LU
+        _, L, _ = lu(omega)
+    
+    # Calcular la IRF para cada horizonte s
+    irf_list = [psi @ L for psi in psi]
+    
+    # Convertir a un único array de numpy y devolver
+    return np.array(irf_list)
+
+
+def generalized_irf(psi: list, omega: np.ndarray, H: int) -> np.ndarray:
+    """
+    Calcula la IRF Generalizada usando la secuencia de matrices Psi.
+    """
+    n = omega.shape[0]
+    H = len(psi) - 1
+    
+    # Preparamos el array final para almacenar todas las respuestas
+    irf_results = np.zeros((H + 1, n, n))
+    
+    # Obtenemos las desviaciones estándar de los errores (denominador)
+    sigma_jj = np.sqrt(np.diag(omega))
+
+    # Bucle para cada horizonte de tiempo h
+    for h, Psi_h in enumerate(psi):
+        # Bucle para cada shock j (columna de la matriz de IRF)
+        for j in range(n):
+            # Numerador: Psi_h * omega_j (columna j de la matriz de covarianza)
+            numerador = Psi_h @ omega[:, j]
+            
+            # La respuesta de todas las variables al shock j en el horizonte h
+            irf_results[h, :, j] = numerador / sigma_jj[j]
+
+    return irf_results
+
+# Descomposición de la Varianza
+def compute_variance_decomposition(Psi, omega, horizon):
+    """
+    Calcula la descomposición de varianza del error de pronóstico
+    
+    Argumentos:
+        Psi: Lista de matrices Ψ
+        omega: Matriz de covarianza
+        horizon: Horizonte temporal
+    
+    Retorna:
+        Matriz n x n donde cada fila suma 1 (porcentajes)
+    """
+    n = omega.shape[0]
+    L = cholesky(omega, lower=True)
+    
+    # Calcular contribución de cada shock a la varianza
+    fevd = np.zeros((n, n))
+    
+    for s in range(horizon + 1):
+        theta_s = np.dot(Psi[s], L)
+        for i in range(n):
+            for j in range(n):
+                fevd[i, j] += theta_s[i, j]**2
+    
+    # Normalizar a porcentajes
+    row_sums = fevd.sum(axis=1, keepdims=True)
+    fevd_percent = fevd / row_sums * 100
+    
+    return fevd_percent
+
+
+################################################################################
+################################################################################
+
